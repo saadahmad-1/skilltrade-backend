@@ -6,9 +6,8 @@ require('dotenv').config();
 const app = express();
 
 app.use(cors());
-app.use(express.json()); // For parsing application/json
+app.use(express.json());
 
-// MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -18,5 +17,5 @@ mongoose.connect(process.env.MONGODB_URI, {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+const authRoutes = require('./routes/user');
+app.use('/api/user', authRoutes);
