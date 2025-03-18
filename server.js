@@ -20,3 +20,4 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/skill', require('./routes/skill'));
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/trade', require('./routes/trade'));

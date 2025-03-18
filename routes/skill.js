@@ -17,6 +17,16 @@ router.get("/", async (req, res) => {
     }
 });
 
+router.get("/:skillId", async (req, res) => {
+    try {
+        const skill = await Skill.findById(req.params.skillId);
+        if (!skill) return res.status(404).json({ error: "Skill not found" });
+        res.json(skill);
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 router.post("/", async (req, res) => {
     try {
         const { name } = req.body;
