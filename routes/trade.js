@@ -71,4 +71,23 @@ router.get("/user/:userId", async (req, res) => {
     }
 });
 
+router.post("/accept", async (req, res) => {
+    try {
+        const { userId, tradeId } = req.body;
+
+        const trade = await Trade.findById(tradeId);
+        if (!trade) return res.status(404).json({ error: "Trade not found" });
+
+        if (trade.acceptedBy) return res.status(400).json({ error: "Trade already accepted" });
+
+        trade.acceptedBy = userId;
+        await trade.save();
+
+        res.json(trade);
+    } catch (error) {
+        console.error("Error accepting trade:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 module.exports = router;
