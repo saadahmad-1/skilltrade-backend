@@ -37,24 +37,36 @@ router.post("/", async (req, res) => {
 
 router.get("/matches/:userId", async (req, res) => {
     try {
-
         const userId = String(req.params.userId);
 
+        // Fetch only one trade for the user
+        const userTrade = await Trade.findOne({ user: userId });
 
-        const userTrades = await Trade.find({ user: userId });
+        if (!userTrade) return res.json([]);
 
-        if (!userTrades.length) return res.json([]);
+        const { haveSkill, wantSkill } = userTrade;
 
-        const haveSkills = userTrades.map(trade => trade.haveSkill);
-        const wantSkills = userTrades.map(trade => trade.wantSkill);
-
+        // Find matching trades that don't belong to the same user
         const matches = await Trade.find({
-            haveSkill: wantSkills[0],
-            wantSkill: haveSkills[0]
-        })
+            haveSkill: wantSkill,
+            wantSkill: haveSkill,
+            user: { $ne: userId } // Exclude the same user
+        });
+
         res.json(matches);
     } catch (error) {
         console.error("Error finding matches:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.get("/user/:userId", async (req, res) => {
+    try {
+        const userId = String(req.params.userId);
+        const trade = await Trade.find({ user: userId }).populate("haveSkill wantSkill");
+        res.json(trade);
+    } catch (error) {
+        console.error("Error fetching trade for user:", error);
         res.status(500).json({ error: "Server error" });
     }
 });
