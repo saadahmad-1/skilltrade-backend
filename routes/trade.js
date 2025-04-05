@@ -39,18 +39,19 @@ router.get("/matches/:userId", async (req, res) => {
     try {
         const userId = String(req.params.userId);
 
-        // Fetch only one trade for the user
+        // Get the user's trade
         const userTrade = await Trade.findOne({ user: userId });
 
         if (!userTrade) return res.json([]);
 
         const { haveSkill, wantSkill } = userTrade;
 
-        // Find matching trades that don't belong to the same user
+        // Find matching trades where 'acceptedBy' is not set
         const matches = await Trade.find({
             haveSkill: wantSkill,
             wantSkill: haveSkill,
-            user: { $ne: userId } // Exclude the same user
+            user: { $ne: userId },
+            acceptedBy: { $exists: false }, // Only show not accepted trades
         });
 
         res.json(matches);
