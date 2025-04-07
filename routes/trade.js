@@ -46,13 +46,23 @@ router.get("/matches/:userId", async (req, res) => {
 
         const { haveSkill, wantSkill } = userTrade;
 
-        // Find matching trades where 'acceptedBy' is not set
-        const matches = await Trade.find({
+        // First, try to find matches where acceptedBy equals userId
+        let matches = await Trade.find({
             haveSkill: wantSkill,
             wantSkill: haveSkill,
             user: { $ne: userId },
-            acceptedBy: { $exists: false }, // Only show not accepted trades
+            acceptedBy: userId,
         });
+
+        // If no matches found, then find matches where acceptedBy doesn't exist
+        if (matches.length === 0) {
+            matches = await Trade.find({
+                haveSkill: wantSkill,
+                wantSkill: haveSkill,
+                user: { $ne: userId },
+                acceptedBy: { $exists: false }
+            });
+        }
 
         res.json(matches);
     } catch (error) {
