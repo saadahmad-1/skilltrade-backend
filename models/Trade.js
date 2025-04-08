@@ -5,6 +5,7 @@ const TradeSchema = new mongoose.Schema({
     haveSkill: { type: mongoose.Schema.Types.String, ref: "Skill" },
     wantSkill: { type: mongoose.Schema.Types.String, ref: "Skill" },
     acceptedBy: { type: mongoose.Schema.Types.String, ref: "User" },
+    isCompleted: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
 

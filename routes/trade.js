@@ -101,4 +101,23 @@ router.post("/accept", async (req, res) => {
     }
 });
 
+router.post("/complete", async (req, res) => {
+    try {
+        const { tradeId } = req.body;
+        const trade = await Trade.findById(tradeId);
+        if (!trade) return res.status(404).json({ error: "Trade not found" });
+
+        if (trade.isCompleted) return res.status(400).json({ error: "Trade already completed" });
+
+        trade.isCompleted = true;
+        await trade.save();
+
+        res.json(trade);
+    } catch (error) {
+        console.error("Error completing trade:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+);
+
 module.exports = router;
