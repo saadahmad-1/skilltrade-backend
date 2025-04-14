@@ -82,6 +82,28 @@ router.get("/user/:userId", async (req, res) => {
     }
 });
 
+router.get("/completed/:userId", async (req, res) => {
+    try {
+        const userId = String(req.params.userId);
+
+        // Find trades where:
+        // 1. The user is either the creator or the acceptor
+        // 2. The trade is completed
+        const completedTrades = await Trade.find({
+            $or: [
+                { user: userId },
+                { acceptedBy: userId }
+            ],
+            isCompleted: true
+        }).populate("haveSkill wantSkill");
+
+        res.json(completedTrades);
+    } catch (error) {
+        console.error("Error fetching completed trades:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 router.post("/accept", async (req, res) => {
     try {
         const { userId, tradeId } = req.body;
@@ -117,7 +139,6 @@ router.post("/complete", async (req, res) => {
         console.error("Error completing trade:", error);
         res.status(500).json({ error: "Server error" });
     }
-}
-);
+});
 
 module.exports = router;
