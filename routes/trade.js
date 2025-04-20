@@ -21,6 +21,16 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Missing fields" });
         }
 
+        // Check if user already has an active trade
+        const existingTrade = await Trade.findOne({
+            user: userId,
+            isCompleted: { $ne: true }
+        });
+
+        if (existingTrade) {
+            return res.status(400).json({ error: "User already has an active trade" });
+        }
+
         const newTrade = new Trade({
             user: userId,
             haveSkill,
@@ -40,29 +50,25 @@ router.get("/matches/:userId", async (req, res) => {
         const userId = String(req.params.userId);
 
         // Get the user's trade
-        const userTrade = await Trade.findOne({ user: userId });
+        const userTrade = await Trade.findOne({
+            user: userId,
+            isCompleted: { $ne: true }
+        });
 
         if (!userTrade) return res.json([]);
 
         const { haveSkill, wantSkill } = userTrade;
 
-        // First, try to find matches where acceptedBy equals userId
-        let matches = await Trade.find({
+        // Find potential matches - other users who:
+        // 1. Have the skill I want
+        // 2. Want the skill I have
+        // 3. Their trade is not completed
+        const matches = await Trade.find({
             haveSkill: wantSkill,
             wantSkill: haveSkill,
             user: { $ne: userId },
-            acceptedBy: userId,
+            isCompleted: { $ne: true }
         });
-
-        // If no matches found, then find matches where acceptedBy doesn't exist
-        if (matches.length === 0) {
-            matches = await Trade.find({
-                haveSkill: wantSkill,
-                wantSkill: haveSkill,
-                user: { $ne: userId },
-                acceptedBy: { $exists: false }
-            });
-        }
 
         res.json(matches);
     } catch (error) {
@@ -74,7 +80,10 @@ router.get("/matches/:userId", async (req, res) => {
 router.get("/user/:userId", async (req, res) => {
     try {
         const userId = String(req.params.userId);
-        const trade = await Trade.find({ user: userId }).populate("haveSkill wantSkill");
+        const trade = await Trade.find({
+            user: userId,
+            isCompleted: { $ne: true }
+        }).populate("haveSkill wantSkill");
         res.json(trade);
     } catch (error) {
         console.error("Error fetching trade for user:", error);
@@ -108,10 +117,20 @@ router.post("/accept", async (req, res) => {
     try {
         const { userId, tradeId } = req.body;
 
+        if (!userId || !tradeId) {
+            return res.status(400).json({ error: "Missing userId or tradeId" });
+        }
+
         const trade = await Trade.findById(tradeId);
         if (!trade) return res.status(404).json({ error: "Trade not found" });
 
-        if (trade.acceptedBy) return res.status(400).json({ error: "Trade already accepted" });
+        if (trade.isCompleted) {
+            return res.status(400).json({ error: "Cannot accept a completed trade" });
+        }
+
+        if (trade.acceptedBy) {
+            return res.status(400).json({ error: "Trade already accepted" });
+        }
 
         trade.acceptedBy = userId;
         await trade.save();
@@ -126,10 +145,21 @@ router.post("/accept", async (req, res) => {
 router.post("/complete", async (req, res) => {
     try {
         const { tradeId } = req.body;
+
+        if (!tradeId) {
+            return res.status(400).json({ error: "Missing tradeId" });
+        }
+
         const trade = await Trade.findById(tradeId);
         if (!trade) return res.status(404).json({ error: "Trade not found" });
 
-        if (trade.isCompleted) return res.status(400).json({ error: "Trade already completed" });
+        if (trade.isCompleted) {
+            return res.status(400).json({ error: "Trade already completed" });
+        }
+
+        if (!trade.acceptedBy) {
+            return res.status(400).json({ error: "Trade must be accepted before it can be completed" });
+        }
 
         trade.isCompleted = true;
         await trade.save();
